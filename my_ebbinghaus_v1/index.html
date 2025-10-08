@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Ebbinghaus - 艾宾浩斯复习软件</title>
+    <link rel="stylesheet" href="src/css/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 导航栏 -->
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h1>My Ebbinghaus</h1>
+            </div>
+            <div class="nav-actions">
+                <button id="add-btn" class="btn btn-primary">添加知识点</button>
+                <button id="export-btn" class="btn btn-secondary">导出MD</button>
+                <button id="review-btn" class="btn btn-success">开始复习</button>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <!-- 知识点列表 -->
+            <div id="knowledge-list" class="knowledge-list">
+                <div class="list-header">
+                    <h2>知识点列表</h2>
+                    <div class="list-controls">
+                        <input type="text" id="search-input" placeholder="搜索知识点..." class="search-input">
+                        <select id="filter-select" class="filter-select">
+                            <option value="">所有掌握程度</option>
+                            <option value="mastered">掌握</option>
+                            <option value="learning">学习中</option>
+                            <option value="struggling">困难</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="points-container" class="points-container">
+                    <!-- 知识点卡片将在这里动态生成 -->
+                </div>
+            </div>
+
+            <!-- 复习界面 -->
+            <div id="review-interface" class="review-interface hidden">
+                <div class="review-header">
+                    <h2>复习模式</h2>
+                    <div class="review-progress">
+                        <span id="progress-text">0 / 0</span>
+                    </div>
+                </div>
+                <div class="review-card">
+                    <div class="card-content">
+                        <h3 id="review-title">知识点标题</h3>
+                        <div id="review-content" class="review-content hidden">
+                            <p>知识点内容...</p>
+                        </div>
+                    </div>
+                    <div class="draft-section">
+                        <div class="draft-header">
+                            <label for="draft-input" class="draft-label">回忆草稿：</label>
+                            <button id="clear-draft-btn" class="btn btn-sm btn-outline-secondary">清空</button>
+                        </div>
+                        <textarea id="draft-input" class="draft-input" placeholder="在这里写下你的回忆和思考..."></textarea>
+                    </div>
+                    <div class="card-actions">
+                        <button id="show-content-btn" class="btn btn-secondary">显示内容</button>
+                        <button id="success-btn" class="btn btn-success">复习成功</button>
+                        <button id="failure-btn" class="btn btn-danger">复习失败</button>
+                        <button id="skip-btn" class="btn btn-warning">跳过</button>
+                    </div>
+                </div>
+                <div class="review-controls">
+                    <button id="exit-review-btn" class="btn btn-secondary">退出复习</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 添加/编辑知识点模态框 -->
+        <div id="point-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">添加知识点</h3>
+                    <button id="close-modal-btn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="point-form">
+                        <div class="form-group">
+                            <label for="point-title">标题</label>
+                            <input type="text" id="point-title" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="point-content">内容</label>
+                            <textarea id="point-content" rows="4" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="point-tags">标签（用逗号分隔）</label>
+                            <input type="text" id="point-tags" placeholder="例如：数学, 重要">
+                        </div>
+                        <div class="form-group">
+                            <label for="point-mastery">掌握程度</label>
+                            <select id="point-mastery">
+                                <option value="struggling">困难</option>
+                                <option value="learning">学习中</option>
+                                <option value="mastered">掌握</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button id="save-point-btn" class="btn btn-primary">保存</button>
+                    <button id="cancel-point-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 确认删除模态框 -->
+        <div id="delete-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>确认删除</h3>
+                    <button id="close-delete-modal-btn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>确定要删除这个知识点吗？此操作无法撤销。</p>
+                </div>
+                <div class="modal-footer">
+                    <button id="confirm-delete-btn" class="btn btn-danger">删除</button>
+                    <button id="cancel-delete-btn" class="btn btn-secondary">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载脚本 -->
+    <script src="src/js/ebbinghaus.js"></script>
+    <script src="src/js/storage.js"></script>
+    <script src="src/js/markdown.js"></script>
+    <script src="src/js/app.js"></script>
+</body>
+</html>

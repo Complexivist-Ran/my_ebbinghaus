@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>当天复习测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .test-result { margin: 10px 0; padding: 10px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 8px 16px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>当天复习功能测试</h1>
+    <p>测试当天复习完后新加入的知识点是否能在当天复习</p>
+    
+    <div class="test-section">
+        <h2>1. 创建初始知识点</h2>
+        <button onclick="createInitialPoints()">创建初始知识点</button>
+        <div id="initial-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 检查当天复习队列</h2>
+        <button onclick="checkTodayReview()">检查当天复习队列</button>
+        <div id="today-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 模拟复习完成</h2>
+        <button onclick="simulateReviewComplete()">模拟复习完成</button>
+        <div id="review-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 添加新知识点</h2>
+        <button onclick="addNewPoints()">添加新知识点</button>
+        <div id="new-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. 检查新知识点是否在当天复习队列</h2>
+        <button onclick="checkNewPointsInQueue()">检查新知识点</button>
+        <div id="queue-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>6. 清理测试数据</h2>
+        <button onclick="clearTestData()">清理数据</button>
+        <div id="cleanup-results"></div>
+    </div>
+    
+    <script src="../src/js/ebbinghaus.js"></script>
+    <script src="../src/js/storage.js"></script>
+    <script>
+        function createInitialPoints() {
+            const results = document.getElementById('initial-results');
+            results.innerHTML = '<h3>创建初始知识点：</h3>';
+            
+            try {
+                // 清理现有数据
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                
+                // 创建不同掌握程度的知识点
+                const testPoints = [
+                    {
+                        title: '初始困难知识点',
+                        content: '这是一个困难的知识点，应该当天复习',
+                        masteryLevel: 'struggling',
+                        tags: ['测试', '困难']
+                    },
+                    {
+                        title: '初始学习中知识点',
+                        content: '这是一个学习中的知识点，应该明天复习',
+                        masteryLevel: 'learning',
+                        tags: ['测试', '学习中']
+                    }
+                ];
+                
+                const createdPoints = [];
+                testPoints.forEach(point => {
+                    const created = addKnowledgePoint(point.title, point.content, point.tags, point.masteryLevel);
+                    createdPoints.push(created);
+                    results.innerHTML += `<div class="test-result info">✅ 创建：${created.title} (${created.masteryLevel}) - 下次复习：${created.nextReview}</div>`;
+                });
+                
+                results.innerHTML += `<div class="test-result pass">✅ 成功创建 ${createdPoints.length} 个初始知识点</div>`;
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 创建失败：${error.message}</div>`;
+            }
+        }
+        
+        function checkTodayReview() {
+            const results = document.getElementById('today-results');
+            results.innerHTML = '<h3>检查当天复习队列：</h3>';
+            
+            try {
+                const pointsToReview = getPointsToReview();
+                const today = getTodayString();
+                
+                results.innerHTML += `<div class="test-result info">📅 今天日期：${today}</div>`;
+                results.innerHTML += `<div class="test-result info">📊 需要复习的知识点数量：${pointsToReview.length}</div>`;
+                
+                if (pointsToReview.length > 0) {
+                    results.innerHTML += '<div class="test-result pass">✅ 今天有需要复习的知识点</div>';
+                    pointsToReview.forEach(point => {
+                        results.innerHTML += `<div class="test-result info">📝 ${point.title} (${point.masteryLevel}) - 下次复习：${point.nextReview}</div>`;
+                    });
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 今天没有需要复习的知识点</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 检查失败：${error.message}</div>`;
+            }
+        }
+        
+        function simulateReviewComplete() {
+            const results = document.getElementById('review-results');
+            results.innerHTML = '<h3>模拟复习完成：</h3>';
+            
+            try {
+                const pointsToReview = getPointsToReview();
+                
+                if (pointsToReview.length === 0) {
+                    results.innerHTML += '<div class="test-result fail">❌ 没有知识点需要复习</div>';
+                    return;
+                }
+                
+                // 模拟复习所有知识点
+                pointsToReview.forEach(point => {
+                    const newMasteryLevel = processReviewResult(point.masteryLevel, 'success');
+                    const nextReviewDate = calculateNextReviewDate(newMasteryLevel, getTodayString(), point.reviewCount + 1);
+                    
+                    updateKnowledgePoint(point.id, {
+                        masteryLevel: newMasteryLevel,
+                        lastReviewed: getTodayString(),
+                        nextReview: nextReviewDate,
+                        reviewCount: point.reviewCount + 1
+                    });
+                    
+                    results.innerHTML += `<div class="test-result info">📝 复习完成：${point.title} → ${newMasteryLevel} (下次复习：${nextReviewDate})</div>`;
+                });
+                
+                results.innerHTML += '<div class="test-result pass">✅ 所有知识点复习完成</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 复习失败：${error.message}</div>`;
+            }
+        }
+        
+        function addNewPoints() {
+            const results = document.getElementById('new-results');
+            results.innerHTML = '<h3>添加新知识点：</h3>';
+            
+            try {
+                // 添加新的困难知识点（应该当天复习）
+                const newPoint = addKnowledgePoint(
+                    '新加入的困难知识点',
+                    '这是复习完成后新加入的困难知识点，应该能在当天复习',
+                    ['测试', '新加入', '困难'],
+                    'struggling'
+                );
+                
+                results.innerHTML += `<div class="test-result info">✅ 新知识点：${newPoint.title} (${newPoint.masteryLevel}) - 下次复习：${newPoint.nextReview}</div>`;
+                
+                // 验证新知识点的复习时间
+                const today = getTodayString();
+                if (newPoint.nextReview === today) {
+                    results.innerHTML += '<div class="test-result pass">✅ 新困难知识点正确设置为当天复习</div>';
+                } else {
+                    results.innerHTML += `<div class="test-result fail">❌ 新困难知识点复习时间错误：期望${today}，实际${newPoint.nextReview}</div>`;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 添加失败：${error.message}</div>`;
+            }
+        }
+        
+        function checkNewPointsInQueue() {
+            const results = document.getElementById('queue-results');
+            results.innerHTML = '<h3>检查新知识点是否在当天复习队列：</h3>';
+            
+            try {
+                const pointsToReview = getPointsToReview();
+                const today = getTodayString();
+                
+                results.innerHTML += `<div class="test-result info">📅 今天日期：${today}</div>`;
+                results.innerHTML += `<div class="test-result info">📊 需要复习的知识点数量：${pointsToReview.length}</div>`;
+                
+                if (pointsToReview.length > 0) {
+                    results.innerHTML += '<div class="test-result pass">✅ 今天有需要复习的知识点</div>';
+                    
+                    const newPoint = pointsToReview.find(p => p.title === '新加入的困难知识点');
+                    if (newPoint) {
+                        results.innerHTML += '<div class="test-result pass">✅ 新加入的困难知识点在当天复习队列中</div>';
+                        results.innerHTML += `<div class="test-result info">📝 ${newPoint.title} (${newPoint.masteryLevel}) - 下次复习：${newPoint.nextReview}</div>`;
+                    } else {
+                        results.innerHTML += '<div class="test-result fail">❌ 新加入的困难知识点不在当天复习队列中</div>';
+                    }
+                    
+                    pointsToReview.forEach(point => {
+                        results.innerHTML += `<div class="test-result info">📝 ${point.title} (${point.masteryLevel}) - 下次复习：${point.nextReview}</div>`;
+                    });
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 今天没有需要复习的知识点</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 检查失败：${error.message}</div>`;
+            }
+        }
+        
+        function clearTestData() {
+            const results = document.getElementById('cleanup-results');
+            results.innerHTML = '<h3>清理测试数据：</h3>';
+            
+            try {
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                localStorage.removeItem('my_ebbinghaus_settings');
+                results.innerHTML += '<div class="test-result pass">✅ 测试数据清理完成</div>';
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 清理失败：${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

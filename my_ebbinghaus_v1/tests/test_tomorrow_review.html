@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>明天复习验证</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .test-result { margin: 10px 0; padding: 10px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 8px 16px; margin: 5px; }
+        .step { margin: 10px 0; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #007bff; }
+    </style>
+</head>
+<body>
+    <h1>明天复习验证工具</h1>
+    <p>这个工具帮助你验证艾宾浩斯遗忘曲线是否正确工作，确保明天能看到需要复习的知识点。</p>
+    
+    <div class="test-section">
+        <h2>验证步骤</h2>
+        <div class="step">
+            <h3>步骤1：创建测试知识点</h3>
+            <button onclick="createTestPoints()">创建测试知识点</button>
+            <div id="create-results"></div>
+        </div>
+        
+        <div class="step">
+            <h3>步骤2：设置不同的复习时间</h3>
+            <button onclick="setReviewTimes()">设置复习时间</button>
+            <div id="time-results"></div>
+        </div>
+        
+        <div class="step">
+            <h3>步骤3：检查今天的复习队列</h3>
+            <button onclick="checkTodayReview()">检查今天需要复习的</button>
+            <div id="today-results"></div>
+        </div>
+        
+        <div class="step">
+            <h3>步骤4：模拟明天的情况</h3>
+            <button onclick="simulateTomorrow()">模拟明天</button>
+            <div id="tomorrow-results"></div>
+        </div>
+        
+        <div class="step">
+            <h3>步骤5：验证复习逻辑</h3>
+            <button onclick="verifyReviewLogic()">验证复习逻辑</button>
+            <div id="logic-results"></div>
+        </div>
+    </div>
+    
+    <div class="test-section">
+        <h2>清理数据</h2>
+        <button onclick="clearAllData()">清理所有测试数据</button>
+        <div id="cleanup-results"></div>
+    </div>
+    
+    <script src="../src/js/ebbinghaus.js"></script>
+    <script src="../src/js/storage.js"></script>
+    <script>
+        function createTestPoints() {
+            const results = document.getElementById('create-results');
+            results.innerHTML = '<h4>创建测试知识点：</h4>';
+            
+            try {
+                // 清理现有数据
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                
+                // 创建不同掌握程度的知识点
+                const testPoints = [
+                    {
+                        title: '困难知识点-今天复习',
+                        content: '这个知识点设置为困难，今天需要复习',
+                        masteryLevel: 'struggling',
+                        tags: ['测试', '困难']
+                    },
+                    {
+                        title: '学习中知识点-明天复习',
+                        content: '这个知识点设置为学习中，明天需要复习',
+                        masteryLevel: 'learning',
+                        tags: ['测试', '学习中']
+                    },
+                    {
+                        title: '掌握知识点-后天复习',
+                        content: '这个知识点设置为掌握，后天需要复习',
+                        masteryLevel: 'mastered',
+                        tags: ['测试', '掌握']
+                    }
+                ];
+                
+                const createdPoints = [];
+                testPoints.forEach(point => {
+                    const created = addKnowledgePoint(point.title, point.content, point.tags);
+                    createdPoints.push(created);
+                    results.innerHTML += `<div class="test-result info">✅ 创建：${created.title} (${created.masteryLevel})</div>`;
+                });
+                
+                results.innerHTML += `<div class="test-result pass">✅ 成功创建 ${createdPoints.length} 个测试知识点</div>`;
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 创建失败：${error.message}</div>`;
+            }
+        }
+        
+        function setReviewTimes() {
+            const results = document.getElementById('time-results');
+            results.innerHTML = '<h4>设置复习时间：</h4>';
+            
+            try {
+                const points = getAllKnowledgePoints();
+                const today = getTodayString();
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                const dayAfterTomorrow = new Date();
+                dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+                const dayAfterTomorrowStr = dayAfterTomorrow.toISOString().split('T')[0];
+                
+                results.innerHTML += `<div class="test-result info">📅 今天：${today}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 明天：${tomorrowStr}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 后天：${dayAfterTomorrowStr}</div>`;
+                
+                // 设置不同的复习时间
+                points.forEach((point, index) => {
+                    let nextReview;
+                    if (index === 0) {
+                        // 第一个：今天复习
+                        nextReview = today;
+                    } else if (index === 1) {
+                        // 第二个：明天复习
+                        nextReview = tomorrowStr;
+                    } else {
+                        // 第三个：后天复习
+                        nextReview = dayAfterTomorrowStr;
+                    }
+                    
+                    updateKnowledgePoint(point.id, { nextReview });
+                    results.innerHTML += `<div class="test-result info">📝 ${point.title} → ${nextReview}</div>`;
+                });
+                
+                results.innerHTML += '<div class="test-result pass">✅ 复习时间设置完成</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 设置失败：${error.message}</div>`;
+            }
+        }
+        
+        function checkTodayReview() {
+            const results = document.getElementById('today-results');
+            results.innerHTML = '<h4>检查今天需要复习的知识点：</h4>';
+            
+            try {
+                const pointsToReview = getPointsToReview();
+                const today = getTodayString();
+                
+                results.innerHTML += `<div class="test-result info">📅 今天日期：${today}</div>`;
+                results.innerHTML += `<div class="test-result info">📊 需要复习的知识点数量：${pointsToReview.length}</div>`;
+                
+                if (pointsToReview.length > 0) {
+                    results.innerHTML += '<div class="test-result pass">✅ 今天有需要复习的知识点</div>';
+                    pointsToReview.forEach(point => {
+                        results.innerHTML += `<div class="test-result info">📝 ${point.title} (${point.masteryLevel}) - 下次复习：${point.nextReview}</div>`;
+                    });
+                } else {
+                    results.innerHTML += '<div class="test-result info">ℹ️ 今天没有需要复习的知识点</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 检查失败：${error.message}</div>`;
+            }
+        }
+        
+        function simulateTomorrow() {
+            const results = document.getElementById('tomorrow-results');
+            results.innerHTML = '<h4>模拟明天的情况：</h4>';
+            
+            try {
+                const points = getAllKnowledgePoints();
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                
+                results.innerHTML += `<div class="test-result info">📅 模拟明天：${tomorrowStr}</div>`;
+                
+                // 检查哪些知识点明天需要复习
+                const tomorrowPoints = points.filter(point => {
+                    return point.nextReview && point.nextReview <= tomorrowStr;
+                });
+                
+                results.innerHTML += `<div class="test-result info">📊 明天需要复习的知识点数量：${tomorrowPoints.length}</div>`;
+                
+                if (tomorrowPoints.length > 0) {
+                    results.innerHTML += '<div class="test-result pass">✅ 明天有需要复习的知识点</div>';
+                    tomorrowPoints.forEach(point => {
+                        results.innerHTML += `<div class="test-result info">📝 ${point.title} (${point.masteryLevel}) - 下次复习：${point.nextReview}</div>`;
+                    });
+                } else {
+                    results.innerHTML += '<div class="test-result info">ℹ️ 明天没有需要复习的知识点</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 模拟失败：${error.message}</div>`;
+            }
+        }
+        
+        function verifyReviewLogic() {
+            const results = document.getElementById('logic-results');
+            results.innerHTML = '<h4>验证复习逻辑：</h4>';
+            
+            try {
+                const points = getAllKnowledgePoints();
+                const today = getTodayString();
+                
+                results.innerHTML += '<h5>艾宾浩斯遗忘曲线验证：</h5>';
+                
+                points.forEach(point => {
+                    const shouldReviewToday = shouldReview(point.nextReview);
+                    const masteryDisplay = getMasteryDisplayName(point.masteryLevel);
+                    
+                    results.innerHTML += `
+                        <div class="test-result ${shouldReviewToday ? 'pass' : 'info'}">
+                            📝 ${point.title}<br>
+                            📊 掌握程度：${masteryDisplay}<br>
+                            📅 下次复习：${point.nextReview}<br>
+                            ${shouldReviewToday ? '✅ 今天需要复习' : 'ℹ️ 今天不需要复习'}
+                        </div>
+                    `;
+                });
+                
+                // 验证复习间隔计算
+                results.innerHTML += '<h5>复习间隔计算验证：</h5>';
+                
+                const testCases = [
+                    { level: 'struggling', count: 0, expectedDays: 0 },
+                    { level: 'struggling', count: 1, expectedDays: 1 },
+                    { level: 'learning', count: 0, expectedDays: 1 },
+                    { level: 'mastered', count: 0, expectedDays: 1 }
+                ];
+                
+                testCases.forEach(testCase => {
+                    const nextReview = calculateNextReviewDate(testCase.level, today, testCase.count);
+                    const nextDate = new Date(nextReview);
+                    const todayDate = new Date(today);
+                    const actualDays = Math.floor((nextDate - todayDate) / (1000 * 60 * 60 * 24));
+                    
+                    results.innerHTML += `
+                        <div class="test-result ${actualDays === testCase.expectedDays ? 'pass' : 'fail'}">
+                            ${actualDays === testCase.expectedDays ? '✅' : '❌'} 
+                            ${testCase.level} (第${testCase.count}次) → ${actualDays}天 (期望${testCase.expectedDays}天)
+                        </div>
+                    `;
+                });
+                
+                results.innerHTML += '<div class="test-result pass">✅ 复习逻辑验证完成</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 验证失败：${error.message}</div>`;
+            }
+        }
+        
+        function clearAllData() {
+            const results = document.getElementById('cleanup-results');
+            results.innerHTML = '<h4>清理数据：</h4>';
+            
+            try {
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                localStorage.removeItem('my_ebbinghaus_settings');
+                results.innerHTML += '<div class="test-result pass">✅ 所有测试数据已清理</div>';
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 清理失败：${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
+

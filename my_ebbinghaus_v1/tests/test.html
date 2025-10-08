@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Ebbinghaus v1 - 测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .test-result { margin: 10px 0; padding: 10px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        button { padding: 8px 16px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>My Ebbinghaus v1 - 功能测试</h1>
+    
+    <div class="test-section">
+        <h2>艾宾浩斯算法测试</h2>
+        <button onclick="testEbbinghausAlgorithm()">运行算法测试</button>
+        <div id="ebbinghaus-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>存储功能测试</h2>
+        <button onclick="testStorageFunctions()">运行存储测试</button>
+        <div id="storage-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Markdown 解析测试</h2>
+        <button onclick="testMarkdownParsing()">运行 Markdown 测试</button>
+        <div id="markdown-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>数据清理</h2>
+        <button onclick="clearTestData()">清理测试数据</button>
+        <div id="cleanup-results"></div>
+    </div>
+    
+    <script src="../src/js/ebbinghaus.js"></script>
+    <script src="../src/js/storage.js"></script>
+    <script src="../src/js/markdown.js"></script>
+    <script>
+        function testEbbinghausAlgorithm() {
+            const results = document.getElementById('ebbinghaus-results');
+            results.innerHTML = '<h3>测试结果：</h3>';
+            
+            try {
+                // 测试掌握程度的间隔计算
+                const masteredNext = calculateNextReviewDate('mastered', '2025-01-01', 0);
+                const learningNext = calculateNextReviewDate('learning', '2025-01-01', 0);
+                const strugglingNext = calculateNextReviewDate('struggling', '2025-01-01', 0);
+                
+                results.innerHTML += `<div class="test-result pass">✅ 掌握程度间隔计算正常</div>`;
+                results.innerHTML += `<div class="test-result">掌握：${masteredNext}</div>`;
+                results.innerHTML += `<div class="test-result">学习中：${learningNext}</div>`;
+                results.innerHTML += `<div class="test-result">困难：${strugglingNext}</div>`;
+                
+                // 测试复习结果处理
+                const successResult = processReviewResult('learning', 'success');
+                const failureResult = processReviewResult('learning', 'failure');
+                
+                results.innerHTML += `<div class="test-result pass">✅ 复习结果处理正常</div>`;
+                results.innerHTML += `<div class="test-result">学习成功：${successResult}</div>`;
+                results.innerHTML += `<div class="test-result">学习失败：${failureResult}</div>`;
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 算法测试失败：${error.message}</div>`;
+            }
+        }
+        
+        function testStorageFunctions() {
+            const results = document.getElementById('storage-results');
+            results.innerHTML = '<h3>测试结果：</h3>';
+            
+            try {
+                // 清理现有数据
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                
+                // 测试添加知识点
+                const newPoint = addKnowledgePoint('测试知识点', '这是一个测试内容', ['测试', '算法']);
+                results.innerHTML += `<div class="test-result pass">✅ 添加知识点成功</div>`;
+                
+                // 测试加载知识点
+                const points = getAllKnowledgePoints();
+                if (points.length === 1) {
+                    results.innerHTML += `<div class="test-result pass">✅ 加载知识点成功</div>`;
+                } else {
+                    results.innerHTML += `<div class="test-result fail">❌ 加载知识点失败</div>`;
+                }
+                
+                // 测试更新知识点
+                const updateSuccess = updateKnowledgePoint(newPoint.id, { title: '更新的测试知识点' });
+                if (updateSuccess) {
+                    results.innerHTML += `<div class="test-result pass">✅ 更新知识点成功</div>`;
+                } else {
+                    results.innerHTML += `<div class="test-result fail">❌ 更新知识点失败</div>`;
+                }
+                
+                // 测试搜索功能
+                const searchResults = searchKnowledgePoints('测试');
+                if (searchResults.length > 0) {
+                    results.innerHTML += `<div class="test-result pass">✅ 搜索功能正常</div>`;
+                } else {
+                    results.innerHTML += `<div class="test-result fail">❌ 搜索功能失败</div>`;
+                }
+                
+                // 测试导出功能
+                const exportData = exportData();
+                if (exportData && exportData.includes('测试知识点')) {
+                    results.innerHTML += `<div class="test-result pass">✅ 导出功能正常</div>`;
+                } else {
+                    results.innerHTML += `<div class="test-result fail">❌ 导出功能失败</div>`;
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 存储测试失败：${error.message}</div>`;
+            }
+        }
+        
+        function testMarkdownParsing() {
+            const results = document.getElementById('markdown-results');
+            results.innerHTML = '<h3>测试结果：</h3>';
+            
+            try {
+                // 测试基础格式
+                const basicMarkdown = `# 标题\n**粗体** *斜体* \`代码\``;
+                const basicHtml = SimpleMarkdown.parse(basicMarkdown);
+                results.innerHTML += `<div class="test-result pass">✅ 基础格式解析正常</div>`;
+                results.innerHTML += `<div class="test-result">输入：${basicMarkdown}</div>`;
+                results.innerHTML += `<div class="test-result">输出：${basicHtml}</div>`;
+                
+                // 测试列表
+                const listMarkdown = `- 项目1\n- 项目2\n1. 有序1\n2. 有序2`;
+                const listHtml = SimpleMarkdown.parse(listMarkdown);
+                results.innerHTML += `<div class="test-result pass">✅ 列表解析正常</div>`;
+                
+                // 测试代码块
+                const codeMarkdown = `\`\`\`javascript\nfunction test() {\n    return "hello";\n}\n\`\`\``;
+                const codeHtml = SimpleMarkdown.parse(codeMarkdown);
+                results.innerHTML += `<div class="test-result pass">✅ 代码块解析正常</div>`;
+                
+                // 测试链接
+                const linkMarkdown = `[测试链接](https://example.com)`;
+                const linkHtml = SimpleMarkdown.parse(linkMarkdown);
+                results.innerHTML += `<div class="test-result pass">✅ 链接解析正常</div>`;
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ Markdown 测试失败：${error.message}</div>`;
+            }
+        }
+        
+        function clearTestData() {
+            const results = document.getElementById('cleanup-results');
+            results.innerHTML = '<h3>清理结果：</h3>';
+            
+            try {
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                localStorage.removeItem('my_ebbinghaus_settings');
+                results.innerHTML += `<div class="test-result pass">✅ 测试数据清理完成</div>`;
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 清理失败：${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

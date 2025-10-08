@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>艾宾浩斯遗忘曲线验证</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .test-result { margin: 10px 0; padding: 10px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 8px 16px; margin: 5px; }
+        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>艾宾浩斯遗忘曲线验证工具</h1>
+    
+    <div class="test-section">
+        <h2>1. 算法基础测试</h2>
+        <button onclick="testBasicAlgorithm()">测试基础算法</button>
+        <div id="basic-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 复习间隔验证</h2>
+        <button onclick="testReviewIntervals()">验证复习间隔</button>
+        <div id="interval-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 实际场景模拟</h2>
+        <button onclick="simulateRealScenario()">模拟真实复习场景</button>
+        <div id="scenario-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 时间计算验证</h2>
+        <button onclick="verifyTimeCalculation()">验证时间计算</button>
+        <div id="time-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. 数据持久化测试</h2>
+        <button onclick="testDataPersistence()">测试数据持久化</button>
+        <div id="persistence-results"></div>
+    </div>
+    
+    <script src="../src/js/ebbinghaus.js"></script>
+    <script src="../src/js/storage.js"></script>
+    <script>
+        function testBasicAlgorithm() {
+            const results = document.getElementById('basic-results');
+            results.innerHTML = '<h3>基础算法测试：</h3>';
+            
+            try {
+                // 测试不同掌握程度的间隔
+                const testCases = [
+                    { level: 'struggling', lastReview: '2025-01-01', count: 0, expected: '2025-01-01' },
+                    { level: 'struggling', lastReview: '2025-01-01', count: 1, expected: '2025-01-02' },
+                    { level: 'learning', lastReview: '2025-01-01', count: 0, expected: '2025-01-02' },
+                    { level: 'learning', lastReview: '2025-01-01', count: 1, expected: '2025-01-03' },
+                    { level: 'mastered', lastReview: '2025-01-01', count: 0, expected: '2025-01-02' },
+                    { level: 'mastered', lastReview: '2025-01-01', count: 1, expected: '2025-01-04' }
+                ];
+                
+                let allPassed = true;
+                testCases.forEach((testCase, index) => {
+                    const result = calculateNextReviewDate(testCase.level, testCase.lastReview, testCase.count);
+                    const passed = result === testCase.expected;
+                    if (!passed) allPassed = false;
+                    
+                    results.innerHTML += `
+                        <div class="test-result ${passed ? 'pass' : 'fail'}">
+                            ${passed ? '✅' : '❌'} 测试 ${index + 1}: ${testCase.level} (第${testCase.count}次复习)
+                            <br>期望: ${testCase.expected}, 实际: ${result}
+                        </div>
+                    `;
+                });
+                
+                if (allPassed) {
+                    results.innerHTML += '<div class="test-result pass">✅ 所有基础算法测试通过</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 部分测试失败</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 基础算法测试失败：${error.message}</div>`;
+            }
+        }
+        
+        function testReviewIntervals() {
+            const results = document.getElementById('interval-results');
+            results.innerHTML = '<h3>复习间隔验证：</h3>';
+            
+            try {
+                const intervals = {
+                    'struggling': [0, 1, 2, 4, 8],
+                    'learning': [1, 2, 4, 8, 16],
+                    'mastered': [1, 3, 7, 15, 30]
+                };
+                
+                results.innerHTML += '<table><tr><th>掌握程度</th><th>复习次数</th><th>间隔天数</th><th>计算示例</th></tr>';
+                
+                Object.keys(intervals).forEach(level => {
+                    intervals[level].forEach((days, index) => {
+                        const startDate = '2025-01-01';
+                        const nextDate = calculateNextReviewDate(level, startDate, index);
+                        const expectedDate = new Date('2025-01-01');
+                        expectedDate.setDate(expectedDate.getDate() + days);
+                        const expectedStr = expectedDate.toISOString().split('T')[0];
+                        
+                        results.innerHTML += `
+                            <tr>
+                                <td>${level}</td>
+                                <td>${index}</td>
+                                <td>${days}</td>
+                                <td>${startDate} + ${days}天 = ${nextDate}</td>
+                            </tr>
+                        `;
+                    });
+                });
+                
+                results.innerHTML += '</table>';
+                results.innerHTML += '<div class="test-result pass">✅ 复习间隔验证完成</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 复习间隔验证失败：${error.message}</div>`;
+            }
+        }
+        
+        function simulateRealScenario() {
+            const results = document.getElementById('scenario-results');
+            results.innerHTML = '<h3>真实场景模拟：</h3>';
+            
+            try {
+                // 清理现有数据
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                
+                // 创建测试知识点
+                const testPoint = addKnowledgePoint(
+                    '测试知识点',
+                    '这是一个测试知识点，用于验证艾宾浩斯曲线',
+                    ['测试']
+                );
+                
+                results.innerHTML += `<div class="test-result info">📝 创建测试知识点：${testPoint.title}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 创建时间：${testPoint.createdAt}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 下次复习：${testPoint.nextReview}</div>`;
+                results.innerHTML += `<div class="test-result info">📊 掌握程度：${testPoint.masteryLevel}</div>`;
+                
+                // 模拟复习过程
+                const today = getTodayString();
+                results.innerHTML += `<div class="test-result info">🗓️ 今天日期：${today}</div>`;
+                
+                // 检查是否需要复习
+                const shouldReview = shouldReview(testPoint.nextReview);
+                results.innerHTML += `<div class="test-result ${shouldReview ? 'pass' : 'info'}">
+                    ${shouldReview ? '✅' : 'ℹ️'} 今天${shouldReview ? '需要' : '不需要'}复习
+                </div>`;
+                
+                // 模拟复习成功
+                const newMasteryLevel = processReviewResult(testPoint.masteryLevel, 'success');
+                const nextReviewDate = calculateNextReviewDate(newMasteryLevel, today, testPoint.reviewCount + 1);
+                
+                results.innerHTML += `<div class="test-result info">📈 复习成功，新掌握程度：${newMasteryLevel}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 下次复习时间：${nextReviewDate}</div>`;
+                
+                // 更新知识点
+                updateKnowledgePoint(testPoint.id, {
+                    masteryLevel: newMasteryLevel,
+                    lastReviewed: today,
+                    nextReview: nextReviewDate,
+                    reviewCount: testPoint.reviewCount + 1
+                });
+                
+                results.innerHTML += '<div class="test-result pass">✅ 真实场景模拟完成</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 真实场景模拟失败：${error.message}</div>`;
+            }
+        }
+        
+        function verifyTimeCalculation() {
+            const results = document.getElementById('time-results');
+            results.innerHTML = '<h3>时间计算验证：</h3>';
+            
+            try {
+                const testDate = '2025-01-01';
+                const testCases = [
+                    { level: 'struggling', count: 0, expectedDays: 0 },
+                    { level: 'struggling', count: 1, expectedDays: 1 },
+                    { level: 'learning', count: 0, expectedDays: 1 },
+                    { level: 'learning', count: 1, expectedDays: 2 },
+                    { level: 'mastered', count: 0, expectedDays: 1 },
+                    { level: 'mastered', count: 1, expectedDays: 3 }
+                ];
+                
+                results.innerHTML += '<table><tr><th>掌握程度</th><th>复习次数</th><th>期望间隔</th><th>计算结果</th><th>状态</th></tr>';
+                
+                testCases.forEach(testCase => {
+                    const result = calculateNextReviewDate(testCase.level, testDate, testCase.count);
+                    const resultDate = new Date(result);
+                    const startDate = new Date(testDate);
+                    const actualDays = Math.floor((resultDate - startDate) / (1000 * 60 * 60 * 24));
+                    const passed = actualDays === testCase.expectedDays;
+                    
+                    results.innerHTML += `
+                        <tr>
+                            <td>${testCase.level}</td>
+                            <td>${testCase.count}</td>
+                            <td>${testCase.expectedDays}天</td>
+                            <td>${actualDays}天</td>
+                            <td>${passed ? '✅' : '❌'}</td>
+                        </tr>
+                    `;
+                });
+                
+                results.innerHTML += '</table>';
+                results.innerHTML += '<div class="test-result pass">✅ 时间计算验证完成</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 时间计算验证失败：${error.message}</div>`;
+            }
+        }
+        
+        function testDataPersistence() {
+            const results = document.getElementById('persistence-results');
+            results.innerHTML = '<h3>数据持久化测试：</h3>';
+            
+            try {
+                // 清理数据
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                
+                // 创建测试数据
+                const testPoint = addKnowledgePoint(
+                    '持久化测试',
+                    '测试数据持久化功能',
+                    ['测试']
+                );
+                
+                results.innerHTML += `<div class="test-result info">📝 创建测试数据</div>`;
+                
+                // 模拟时间变化
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                
+                // 更新为明天需要复习
+                updateKnowledgePoint(testPoint.id, {
+                    nextReview: tomorrowStr
+                });
+                
+                results.innerHTML += `<div class="test-result info">📅 设置明天复习：${tomorrowStr}</div>`;
+                
+                // 重新加载数据
+                const points = getAllKnowledgePoints();
+                const reloadedPoint = points.find(p => p.id === testPoint.id);
+                
+                if (reloadedPoint && reloadedPoint.nextReview === tomorrowStr) {
+                    results.innerHTML += '<div class="test-result pass">✅ 数据持久化成功</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 数据持久化失败</div>';
+                }
+                
+                // 测试复习队列
+                const pointsToReview = getPointsToReview();
+                results.innerHTML += `<div class="test-result info">📊 当前需要复习的知识点数量：${pointsToReview.length}</div>`;
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 数据持久化测试失败：${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
+

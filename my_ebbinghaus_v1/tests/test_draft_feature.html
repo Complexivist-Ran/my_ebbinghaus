@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>草稿功能测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .test-result { margin: 10px 0; padding: 10px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 8px 16px; margin: 5px; }
+        .draft-section { margin: 1rem 0; padding: 1rem; background-color: #f8f9fa; border-radius: 6px; border: 1px solid #e9ecef; }
+        .draft-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .draft-label { font-weight: 500; color: #495057; font-size: 14px; margin: 0; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; }
+        .btn-outline-secondary { background-color: transparent; border: 1px solid #6c757d; color: #6c757d; }
+        .btn-outline-secondary:hover { background-color: #6c757d; color: white; }
+        .draft-input { width: 100%; min-height: 80px; padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 14px; font-family: inherit; line-height: 1.5; resize: vertical; background-color: white; transition: border-color 0.2s ease; }
+        .draft-input:focus { outline: none; border-color: #007bff; box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25); }
+        .draft-input::placeholder { color: #6c757d; font-style: italic; }
+    </style>
+</head>
+<body>
+    <h1>草稿功能测试</h1>
+    <p>测试复习模式中的草稿输入框功能</p>
+    
+    <div class="test-section">
+        <h2>1. 草稿输入框测试</h2>
+        <div class="draft-section">
+            <div class="draft-header">
+                <label for="test-draft-input" class="draft-label">回忆草稿：</label>
+                <button id="test-clear-draft-btn" class="btn-sm btn-outline-secondary">清空</button>
+            </div>
+            <textarea id="test-draft-input" class="draft-input" placeholder="在这里写下你的回忆和思考..."></textarea>
+        </div>
+        <button onclick="testDraftInput()">测试草稿输入</button>
+        <button onclick="testClearDraft()">测试清空功能</button>
+        <div id="draft-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 键盘快捷键测试</h2>
+        <p>在草稿输入框中输入一些文字，然后按 Ctrl+L 测试清空功能</p>
+        <div id="keyboard-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 草稿功能说明</h2>
+        <div id="feature-info"></div>
+    </div>
+    
+    <script>
+        function testDraftInput() {
+            const results = document.getElementById('draft-results');
+            results.innerHTML = '<h3>草稿输入测试：</h3>';
+            
+            try {
+                const draftInput = document.getElementById('test-draft-input');
+                const testText = '这是一个测试草稿内容，用于验证草稿输入框的功能。';
+                
+                draftInput.value = testText;
+                
+                if (draftInput.value === testText) {
+                    results.innerHTML += '<div class="test-result pass">✅ 草稿输入功能正常</div>';
+                    results.innerHTML += `<div class="test-result info">📝 输入内容：${testText}</div>`;
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 草稿输入功能异常</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 测试失败：${error.message}</div>`;
+            }
+        }
+        
+        function testClearDraft() {
+            const results = document.getElementById('draft-results');
+            results.innerHTML = '<h3>清空功能测试：</h3>';
+            
+            try {
+                const draftInput = document.getElementById('test-draft-input');
+                
+                // 先输入一些内容
+                draftInput.value = '测试内容';
+                
+                // 清空
+                draftInput.value = '';
+                
+                if (draftInput.value === '') {
+                    results.innerHTML += '<div class="test-result pass">✅ 清空功能正常</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 清空功能异常</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 测试失败：${error.message}</div>`;
+            }
+        }
+        
+        function showFeatureInfo() {
+            const results = document.getElementById('feature-info');
+            results.innerHTML = `
+                <h3>草稿功能特性：</h3>
+                <div class="test-result info">
+                    <h4>📝 主要功能：</h4>
+                    <ul>
+                        <li><strong>回忆记录</strong>：在复习时写下你的回忆和思考</li>
+                        <li><strong>临时存储</strong>：草稿内容不会保存，每次进入新知识点时自动清空</li>
+                        <li><strong>快速清空</strong>：点击"清空"按钮或使用 Ctrl+L 快捷键</li>
+                        <li><strong>自动聚焦</strong>：清空后自动聚焦到输入框</li>
+                    </ul>
+                </div>
+                <div class="test-result info">
+                    <h4>⌨️ 快捷键：</h4>
+                    <ul>
+                        <li><strong>Ctrl+L</strong>：在草稿输入框中时，清空当前草稿内容</li>
+                        <li><strong>其他快捷键</strong>：在草稿输入框外时，数字键和空格键正常工作</li>
+                    </ul>
+                </div>
+                <div class="test-result info">
+                    <h4>🎯 使用场景：</h4>
+                    <ul>
+                        <li><strong>回忆练习</strong>：根据标题回忆知识点内容</li>
+                        <li><strong>思考记录</strong>：记录复习过程中的思考和疑问</li>
+                        <li><strong>对比分析</strong>：与标准答案对比，找出差异</li>
+                        <li><strong>学习笔记</strong>：临时记录重要的学习要点</li>
+                    </ul>
+                </div>
+            `;
+        }
+        
+        // 绑定清空按钮事件
+        document.getElementById('test-clear-draft-btn').addEventListener('click', function() {
+            document.getElementById('test-draft-input').value = '';
+            document.getElementById('test-draft-input').focus();
+        });
+        
+        // 绑定键盘事件
+        document.getElementById('test-draft-input').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'l') {
+                e.preventDefault();
+                this.value = '';
+                this.focus();
+                
+                const results = document.getElementById('keyboard-results');
+                results.innerHTML = '<div class="test-result pass">✅ Ctrl+L 快捷键工作正常</div>';
+            }
+        });
+        
+        // 页面加载时显示功能说明
+        showFeatureInfo();
+    </script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>掌握程度改变测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .test-result { margin: 10px 0; padding: 10px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 8px 16px; margin: 5px; }
+        table { border-collapse: collapse; width: 100%; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+    <h1>掌握程度改变测试</h1>
+    <p>测试掌握程度改变时复习日期是否正确更新</p>
+    
+    <div class="test-section">
+        <h2>1. 创建测试知识点</h2>
+        <button onclick="createTestPoint()">创建学习中等级的知识点</button>
+        <div id="create-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. 检查初始复习时间</h2>
+        <button onclick="checkInitialReviewTime()">检查初始复习时间</button>
+        <div id="initial-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. 改变掌握程度</h2>
+        <button onclick="changeMasteryLevel()">改为困难等级</button>
+        <div id="change-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. 验证复习时间更新</h2>
+        <button onclick="verifyReviewTimeUpdate()">验证复习时间更新</button>
+        <div id="verify-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. 测试所有掌握程度变化</h2>
+        <button onclick="testAllMasteryChanges()">测试所有变化</button>
+        <div id="all-tests-results"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>6. 清理测试数据</h2>
+        <button onclick="clearTestData()">清理数据</button>
+        <div id="cleanup-results"></div>
+    </div>
+    
+    <script src="../src/js/ebbinghaus.js"></script>
+    <script src="../src/js/storage.js"></script>
+    <script>
+        let testPointId = null;
+        
+        function createTestPoint() {
+            const results = document.getElementById('create-results');
+            results.innerHTML = '<h3>创建测试知识点：</h3>';
+            
+            try {
+                // 清理现有数据
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                
+                // 创建学习中等级的知识点
+                const testPoint = addKnowledgePoint(
+                    '测试掌握程度变化',
+                    '这是一个用于测试掌握程度变化的知识点',
+                    ['测试', '掌握程度'],
+                    'learning'
+                );
+                
+                testPointId = testPoint.id;
+                
+                results.innerHTML += `<div class="test-result info">✅ 创建知识点：${testPoint.title}</div>`;
+                results.innerHTML += `<div class="test-result info">📊 掌握程度：${testPoint.masteryLevel}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 下次复习：${testPoint.nextReview}</div>`;
+                results.innerHTML += `<div class="test-result info">🆔 知识点ID：${testPoint.id}</div>`;
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 创建失败：${error.message}</div>`;
+            }
+        }
+        
+        function checkInitialReviewTime() {
+            const results = document.getElementById('initial-results');
+            results.innerHTML = '<h3>检查初始复习时间：</h3>';
+            
+            try {
+                if (!testPointId) {
+                    results.innerHTML += '<div class="test-result fail">❌ 请先创建测试知识点</div>';
+                    return;
+                }
+                
+                const points = getAllKnowledgePoints();
+                const point = points.find(p => p.id === testPointId);
+                
+                if (!point) {
+                    results.innerHTML += '<div class="test-result fail">❌ 找不到测试知识点</div>';
+                    return;
+                }
+                
+                const today = getTodayString();
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                
+                results.innerHTML += `<div class="test-result info">📅 今天：${today}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 明天：${tomorrowStr}</div>`;
+                results.innerHTML += `<div class="test-result info">📊 当前掌握程度：${point.masteryLevel}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 当前复习时间：${point.nextReview}</div>`;
+                
+                // 验证学习中等级应该是明天复习
+                if (point.masteryLevel === 'learning' && point.nextReview === tomorrowStr) {
+                    results.innerHTML += '<div class="test-result pass">✅ 学习中等级正确设置为明天复习</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 学习中等级复习时间设置错误</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 检查失败：${error.message}</div>`;
+            }
+        }
+        
+        function changeMasteryLevel() {
+            const results = document.getElementById('change-results');
+            results.innerHTML = '<h3>改变掌握程度：</h3>';
+            
+            try {
+                if (!testPointId) {
+                    results.innerHTML += '<div class="test-result fail">❌ 请先创建测试知识点</div>';
+                    return;
+                }
+                
+                // 改变掌握程度为困难
+                const success = updateKnowledgePoint(testPointId, {
+                    masteryLevel: 'struggling'
+                });
+                
+                if (success) {
+                    results.innerHTML += '<div class="test-result pass">✅ 掌握程度更新成功</div>';
+                    
+                    // 检查更新后的状态
+                    const points = getAllKnowledgePoints();
+                    const point = points.find(p => p.id === testPointId);
+                    
+                    if (point) {
+                        results.innerHTML += `<div class="test-result info">📊 新掌握程度：${point.masteryLevel}</div>`;
+                        results.innerHTML += `<div class="test-result info">📅 新复习时间：${point.nextReview}</div>`;
+                    }
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 掌握程度更新失败</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 更新失败：${error.message}</div>`;
+            }
+        }
+        
+        function verifyReviewTimeUpdate() {
+            const results = document.getElementById('verify-results');
+            results.innerHTML = '<h3>验证复习时间更新：</h3>';
+            
+            try {
+                if (!testPointId) {
+                    results.innerHTML += '<div class="test-result fail">❌ 请先创建测试知识点</div>';
+                    return;
+                }
+                
+                const points = getAllKnowledgePoints();
+                const point = points.find(p => p.id === testPointId);
+                
+                if (!point) {
+                    results.innerHTML += '<div class="test-result fail">❌ 找不到测试知识点</div>';
+                    return;
+                }
+                
+                const today = getTodayString();
+                
+                results.innerHTML += `<div class="test-result info">📅 今天：${today}</div>`;
+                results.innerHTML += `<div class="test-result info">📊 当前掌握程度：${point.masteryLevel}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 当前复习时间：${point.nextReview}</div>`;
+                
+                // 验证困难等级应该是当天复习
+                if (point.masteryLevel === 'struggling' && point.nextReview === today) {
+                    results.innerHTML += '<div class="test-result pass">✅ 困难等级正确设置为当天复习</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 困难等级复习时间设置错误</div>';
+                }
+                
+                // 检查是否在当天复习队列中
+                const pointsToReview = getPointsToReview();
+                const inQueue = pointsToReview.some(p => p.id === testPointId);
+                
+                if (inQueue) {
+                    results.innerHTML += '<div class="test-result pass">✅ 知识点在当天复习队列中</div>';
+                } else {
+                    results.innerHTML += '<div class="test-result fail">❌ 知识点不在当天复习队列中</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 验证失败：${error.message}</div>`;
+            }
+        }
+        
+        function testAllMasteryChanges() {
+            const results = document.getElementById('all-tests-results');
+            results.innerHTML = '<h3>测试所有掌握程度变化：</h3>';
+            
+            try {
+                // 清理现有数据
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                
+                const today = getTodayString();
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                const tomorrowStr = tomorrow.toISOString().split('T')[0];
+                
+                results.innerHTML += `<div class="test-result info">📅 今天：${today}</div>`;
+                results.innerHTML += `<div class="test-result info">📅 明天：${tomorrowStr}</div>`;
+                
+                // 测试所有掌握程度变化
+                const testCases = [
+                    { from: 'struggling', to: 'learning', expected: tomorrowStr },
+                    { from: 'struggling', to: 'mastered', expected: tomorrowStr },
+                    { from: 'learning', to: 'struggling', expected: today },
+                    { from: 'learning', to: 'mastered', expected: tomorrowStr },
+                    { from: 'mastered', to: 'struggling', expected: today },
+                    { from: 'mastered', to: 'learning', expected: tomorrowStr }
+                ];
+                
+                results.innerHTML += '<table><tr><th>从</th><th>到</th><th>期望复习时间</th><th>实际复习时间</th><th>结果</th></tr>';
+                
+                testCases.forEach((testCase, index) => {
+                    // 创建测试知识点
+                    const testPoint = addKnowledgePoint(
+                        `测试${index + 1}`,
+                        `测试掌握程度变化：${testCase.from} → ${testCase.to}`,
+                        ['测试'],
+                        testCase.from
+                    );
+                    
+                    // 改变掌握程度
+                    updateKnowledgePoint(testPoint.id, {
+                        masteryLevel: testCase.to
+                    });
+                    
+                    // 检查结果
+                    const points = getAllKnowledgePoints();
+                    const point = points.find(p => p.id === testPoint.id);
+                    const actual = point ? point.nextReview : '未知';
+                    const passed = actual === testCase.expected;
+                    
+                    results.innerHTML += `
+                        <tr>
+                            <td>${testCase.from}</td>
+                            <td>${testCase.to}</td>
+                            <td>${testCase.expected}</td>
+                            <td>${actual}</td>
+                            <td>${passed ? '✅' : '❌'}</td>
+                        </tr>
+                    `;
+                });
+                
+                results.innerHTML += '</table>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 测试失败：${error.message}</div>`;
+            }
+        }
+        
+        function clearTestData() {
+            const results = document.getElementById('cleanup-results');
+            results.innerHTML = '<h3>清理测试数据：</h3>';
+            
+            try {
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                localStorage.removeItem('my_ebbinghaus_settings');
+                testPointId = null;
+                results.innerHTML += '<div class="test-result pass">✅ 测试数据清理完成</div>';
+            } catch (error) {
+                results.innerHTML += `<div class="test-result fail">❌ 清理失败：${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据恢复工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .recovery-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .recovery-result { margin: 10px 0; padding: 10px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button { padding: 8px 16px; margin: 5px; }
+        textarea { width: 100%; height: 200px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>数据恢复工具</h1>
+    <p>如果您的知识点数据丢失了，可以使用这个工具来恢复或检查数据状态。</p>
+    
+    <div class="recovery-section">
+        <h2>1. 检查当前数据状态</h2>
+        <button onclick="checkCurrentData()">检查当前数据</button>
+        <div id="current-data-results"></div>
+    </div>
+    
+    <div class="recovery-section">
+        <h2>2. 检查localStorage</h2>
+        <button onclick="checkLocalStorage()">检查localStorage</button>
+        <div id="localstorage-results"></div>
+    </div>
+    
+    <div class="recovery-section">
+        <h2>3. 数据备份</h2>
+        <button onclick="backupData()">备份当前数据</button>
+        <div id="backup-results"></div>
+    </div>
+    
+    <div class="recovery-section">
+        <h2>4. 数据恢复</h2>
+        <p>如果您有备份数据，可以粘贴到这里恢复：</p>
+        <textarea id="restore-data" placeholder="粘贴备份的JSON数据 here..."></textarea>
+        <button onclick="restoreData()">恢复数据</button>
+        <div id="restore-results"></div>
+    </div>
+    
+    <div class="recovery-section">
+        <h2>5. 清理数据</h2>
+        <button onclick="clearAllData()">清理所有数据</button>
+        <div id="clear-results"></div>
+    </div>
+    
+    <script src="../src/js/storage.js"></script>
+    <script>
+        function checkCurrentData() {
+            const results = document.getElementById('current-data-results');
+            results.innerHTML = '<h3>当前数据状态：</h3>';
+            
+            try {
+                const points = getAllKnowledgePoints();
+                results.innerHTML += `<div class="recovery-result info">📊 知识点数量：${points.length}</div>`;
+                
+                if (points.length > 0) {
+                    results.innerHTML += '<div class="recovery-result pass">✅ 数据存在</div>';
+                    points.forEach((point, index) => {
+                        results.innerHTML += `
+                            <div class="recovery-result info">
+                                ${index + 1}. ${point.title} (${point.masteryLevel}) - ID: ${point.id}
+                            </div>
+                        `;
+                    });
+                } else {
+                    results.innerHTML += '<div class="recovery-result fail">❌ 没有找到知识点数据</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="recovery-result fail">❌ 检查失败：${error.message}</div>`;
+            }
+        }
+        
+        function checkLocalStorage() {
+            const results = document.getElementById('localstorage-results');
+            results.innerHTML = '<h3>localStorage状态：</h3>';
+            
+            try {
+                const storageKey = 'my_ebbinghaus_knowledge_points';
+                const data = localStorage.getItem(storageKey);
+                
+                if (data) {
+                    results.innerHTML += '<div class="recovery-result pass">✅ localStorage中有数据</div>';
+                    results.innerHTML += `<div class="recovery-result info">数据长度：${data.length} 字符</div>`;
+                    
+                    try {
+                        const parsed = JSON.parse(data);
+                        results.innerHTML += `<div class="recovery-result info">解析成功，包含 ${parsed.length} 个知识点</div>`;
+                    } catch (parseError) {
+                        results.innerHTML += `<div class="recovery-result fail">❌ 数据格式错误：${parseError.message}</div>`;
+                    }
+                } else {
+                    results.innerHTML += '<div class="recovery-result fail">❌ localStorage中没有数据</div>';
+                }
+                
+                // 显示原始数据
+                results.innerHTML += '<h4>原始数据：</h4>';
+                results.innerHTML += `<textarea readonly>${data || '无数据'}</textarea>`;
+                
+            } catch (error) {
+                results.innerHTML += `<div class="recovery-result fail">❌ 检查失败：${error.message}</div>`;
+            }
+        }
+        
+        function backupData() {
+            const results = document.getElementById('backup-results');
+            results.innerHTML = '<h3>数据备份：</h3>';
+            
+            try {
+                const backup = exportData();
+                results.innerHTML += '<div class="recovery-result pass">✅ 备份成功</div>';
+                results.innerHTML += '<h4>备份数据：</h4>';
+                results.innerHTML += `<textarea readonly>${backup}</textarea>`;
+                results.innerHTML += '<div class="recovery-result info">💡 请复制上述数据并保存，以便需要时恢复</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="recovery-result fail">❌ 备份失败：${error.message}</div>`;
+            }
+        }
+        
+        function restoreData() {
+            const results = document.getElementById('restore-results');
+            results.innerHTML = '<h3>数据恢复：</h3>';
+            
+            try {
+                const restoreData = document.getElementById('restore-data').value.trim();
+                if (!restoreData) {
+                    results.innerHTML += '<div class="recovery-result fail">❌ 请输入要恢复的数据</div>';
+                    return;
+                }
+                
+                // 先备份当前数据
+                const currentBackup = exportData();
+                localStorage.setItem('my_ebbinghaus_backup_before_restore', currentBackup);
+                results.innerHTML += '<div class="recovery-result info">📝 已备份当前数据</div>';
+                
+                // 恢复数据
+                const success = importData(restoreData);
+                if (success) {
+                    results.innerHTML += '<div class="recovery-result pass">✅ 数据恢复成功</div>';
+                    
+                    // 重新加载页面数据
+                    const points = getAllKnowledgePoints();
+                    results.innerHTML += `<div class="recovery-result info">📊 恢复后知识点数量：${points.length}</div>`;
+                } else {
+                    results.innerHTML += '<div class="recovery-result fail">❌ 数据恢复失败</div>';
+                }
+                
+            } catch (error) {
+                results.innerHTML += `<div class="recovery-result fail">❌ 恢复失败：${error.message}</div>`;
+            }
+        }
+        
+        function clearAllData() {
+            const results = document.getElementById('clear-results');
+            results.innerHTML = '<h3>清理数据：</h3>';
+            
+            try {
+                // 先备份
+                const backup = exportData();
+                localStorage.setItem('my_ebbinghaus_backup_before_clear', backup);
+                
+                // 清理数据
+                localStorage.removeItem('my_ebbinghaus_knowledge_points');
+                localStorage.removeItem('my_ebbinghaus_settings');
+                
+                results.innerHTML += '<div class="recovery-result pass">✅ 数据清理完成</div>';
+                results.innerHTML += '<div class="recovery-result info">📝 已备份清理前的数据</div>';
+                
+            } catch (error) {
+                results.innerHTML += `<div class="recovery-result fail">❌ 清理失败：${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
+
